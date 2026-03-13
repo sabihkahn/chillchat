@@ -9,7 +9,7 @@ import path from 'path'
 
 
 const app = express()     
-connectdb()
+
 
 app.use(express.json())
 
@@ -39,5 +39,8 @@ if(process.env.NODE_ENV == "production")
 });
 }
 
-server.listen(process.env.PORT,()=>{console.log('server is running on http://localhost:3000');
+server.listen(process.env.PORT,()=>{
+console.log('server is running on http://localhost:3000');
+connectdb()
+
 })

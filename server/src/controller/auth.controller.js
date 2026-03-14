@@ -1,6 +1,7 @@
 import User from '../model/User.js'
 import bcrypt from 'bcrypt'
 import {generateToken} from '../libs/utils.js'
+import { sendWelcomeEmail } from '../email/emailhandler.js'
 
 
 
@@ -32,6 +33,11 @@ export const signup = async (req, res) => {
         if (newUser) {
             await newUser.save()
             generateToken(newUser._id,res)
+             try {
+            await sendWelcomeEmail(newUser.email,newUser.fullName,process.env.frontend_url)
+        } catch (error) {
+            console.log("error while sending ",error)
+        }
             return res.status(201).send({
                 _id:newUser._id,
                 fullname:newUser.fullName,
@@ -41,6 +47,7 @@ export const signup = async (req, res) => {
         } else {
             return res.status(400).send({ message: "invalid user data" })
         }
+       
 
     } catch (error) {
         console.log("error in authcontroller while creating user ",error);

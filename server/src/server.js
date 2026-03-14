@@ -16,7 +16,9 @@ app.use(express.json())
 app.use(arcjetProtection)
 const __dirname = path.resolve()
 // Routes
-
+app.get('/health',(req,res)=>{
+    res.status(200).json({message:"Server is healthy"})
+})
 app.use('/auth',authRoute)
 app.use('/api/message',messageRoute)
 

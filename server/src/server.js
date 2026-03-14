@@ -5,6 +5,7 @@ import http from 'http'
 import {connectdb} from  './config/config.js'
 import authRoute from './routes/auth.route.js'
 import messageRoute from './routes/message.route.js'
+import {arcjetProtection} from './middleware/Arject.middleware.js'
 import path from 'path'
 
 
@@ -12,7 +13,7 @@ const app = express()
 
 
 app.use(express.json())
-
+app.use(arcjetProtection)
 const __dirname = path.resolve()
 // Routes
 

@@ -15,7 +15,7 @@ try {
     req.user = user;
     next()
 } catch (error) {
-    console.log("error in authorization",error);
+    console.log("error in authorization try checking cookie -parser is setted",error);
     res.status(500).send({message:"Internal server error authorization"})
 }
 }

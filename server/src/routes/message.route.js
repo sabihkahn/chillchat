@@ -1,15 +1,14 @@
 import express from  'express'
 import { getAllContacts, getChatsPartners, getMessagebyuserId, sendMessage } from '../controller/message.controller.js'
-
+import {authorization} from '../middleware/authorization.middleware.js'
 const router = express.Router()
 
 
-router.get('/contacts',getAllContacts)
+router.get('/contacts',authorization,getAllContacts)
 
-router.get('/chats',getChatsPartners)
+router.get('/chats',authorization,getChatsPartners)
 
-router.get('/:id',getMessagebyuserId)
-
-router.get('/send/:id',sendMessage)
+router.get('/:id',authorization,getMessagebyuserId)
+router.post('/send/:id',authorization,sendMessage)
 
 export default router

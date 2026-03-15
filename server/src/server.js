@@ -7,12 +7,13 @@ import authRoute from './routes/auth.route.js'
 import messageRoute from './routes/message.route.js'
 import {arcjetProtection} from './middleware/Arject.middleware.js'
 import path from 'path'
-
+import cookieparser from 'cookie-parser'
 
 const app = express()     
 
-
+    
 app.use(express.json())
+app.use(cookieparser())
 app.use(arcjetProtection)
 const __dirname = path.resolve()
 // Routes

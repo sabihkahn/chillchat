@@ -30,24 +30,29 @@ export const signup = async (req, res) => {
             email: email,
             password: hasedPassword
         })
-        if (newUser) {
-            await newUser.save()
-            generateToken(newUser._id,res)
-             try {
-            await sendWelcomeEmail(newUser.email,newUser.fullName,process.env.frontend_url)
-        } catch (error) {
-            console.log("error while sending ",error)
-        }
-            return res.status(201).send({
-                _id:newUser._id,
-                fullname:newUser.fullName,
-                email:newUser.email,
-                profilepic:newUser.profilePic
+     //sending email also checking if user email is valid 
+
+     
+     try {
+     await sendWelcomeEmail(newUser.email,newUser.fullName,process.env.frontend_url)
+     } catch (error) {
+     console.log("error while sending ",error)
+  //    return res.status(400).send({message:"please enter a valid google email"})
+     }
+     
+     if (newUser) {
+         await newUser.save()
+         generateToken(newUser._id,res)
+         return res.status(201).send({
+             _id:newUser._id,
+             fullname:newUser.fullName,
+             email:newUser.email,
+             profilepic:newUser.profilePic
             })
         } else {
             return res.status(400).send({ message: "invalid user data" })
         }
-       
+        
 
     } catch (error) {
         console.log("error in authcontroller while creating user ",error);
@@ -106,7 +111,8 @@ export const updateProfile = async (req, res) => {
             userId,
             { profilePic: uploadResponse.secure_url },
             { new: true }
-        );
+        ).select("-password")
+        
 
         res.status(200).json(updatedUser);
     } catch (error) {

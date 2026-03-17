@@ -1,6 +1,7 @@
 import Message from "../model/Message.js"
 import User from "../model/User.js"
 import cloudinary from '../libs/cloudinary.js'
+import { getreciverId, io } from "../libs/socket.js"
 
 
 export const getAllContacts = async (req, res) => {
@@ -65,17 +66,24 @@ export const sendMessage = async (req, res) => {
             const result = await cloudinary.uploader.upload(image)
             imageURl = result.secure_url
         }
-
-
+        
         const newMessage = new Message({
             senderId: LogedInUserId,
-            receiverId: id,
+            receiverId: id, 
             text: message,
             image: imageURl
         })
-
+        
         await newMessage.save()
 
+        //real time communticatrion here 
+        const reciverid1 = getreciverId(receiverId)
+
+        if (reciverid1) {
+            console.log(receiverId,newMessage)
+            io.to(reciverid1).emit("newMessage", newMessage)
+        }
+        
         res.status(201).json(newMessage)
     } catch (error) {
         console.log("error in sendMessage", error);

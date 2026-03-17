@@ -9,7 +9,9 @@ import { arcjetProtection } from './middleware/Arject.middleware.js'
 import path from 'path'
 import cookieparser from 'cookie-parser'
 import cors from 'cors'
-const app = express()
+
+import {app,server,io} from './libs/socket.js'
+
 
 
 app.use(express.json({ limit: "10mb" }));
@@ -23,21 +25,15 @@ app.use(cors({
 app.use(arcjetProtection)
 
 const __dirname = path.resolve()
-// Routes
+
+
 app.get('/health', (req, res) => {
     res.status(200).json({ message: "Server is healthy" })
 })
 app.use('/api/auth', authRoute)
 app.use('/api/messages', messageRoute)
 
-const server = http.createServer(app)
-// const io = new Server(server, {
-//     cors: "*"
-// })
 
-// io.on('connection', (socket) => {
-//     socket.emit('hello')
-// })
 
 
 

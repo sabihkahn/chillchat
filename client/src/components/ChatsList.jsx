@@ -14,14 +14,18 @@ const ChatsList = () => {
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (chats.length === 0) return <NoChatsFound />;
-
+  console.log("chat id",chats);
+  
   return (
     <div className="flex flex-col gap-2 p-2">
       {chats.map((chat) => {
         // Check if the user is actually online based on your socket/auth store
-        const isOnline = onlineUsers?.includes(chat._id);
-        const isSelected = selectedUser?._id === chat._id;
-
+        const isOnline = onlineUsers?.includes(chat._id.toString());
+        const isSelected = selectedUser?._id === chat._id.toString();
+        console.log(isOnline,isSelected);
+        console.log("chat id",chat);
+        
+        
         return (
           <button
             key={chat._id}
@@ -34,7 +38,7 @@ const ChatsList = () => {
             `}
           >
             {/* AVATAR SECTION - Fixed daisyUI classes */}
-            <div className={`avatar ${isOnline ? "online" : "offline"}`}>
+            <div className={`avatar ${isOnline ? "avatar-online" : "avatar-offline"}`}>
               <div className="size-12 rounded-full ring-2 ring-slate-700 group-hover:ring-cyan-500/50 transition-all">
                 <img
                   src={chat.profilePic || "/avatar.png"}

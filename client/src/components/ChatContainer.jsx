@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import {useChatStore} from '../store/useChatStore'
 import { useEffect } from "react";
 import {useAuthStore} from '../store/useAuthStore'
@@ -12,16 +12,27 @@ import MeddshrdLoadingskelton from '../components/MeddshrdLoadingskelton'
 
 const ChatContainer = () => {
 
-  const { getMessagesByuserid, messages, selectedUser, isMessagesLoading } = useChatStore()
+  const { getMessagesByuserid, messages, selectedUser, isMessagesLoading, subscribetomessage, unsubscribeFromMessages } = useChatStore()
   const { authUser } = useAuthStore()
-
+  const messageEndRef = useRef(null)
   useEffect(()=>{
     getMessagesByuserid(selectedUser._id)
-  }, [selectedUser, getMessagesByuserid])
+   
+   
+  }, [selectedUser, getMessagesByuserid,unsubscribeFromMessages])
 
-  console.log(messages)
+  console.log("messages no subscribetomessage ==>", subscribetomessage)
+  useEffect(()=>{
+    if (messageEndRef.current) messageEndRef.current.scrollIntoView({ behaviour: "smooth" })
+  },[messages])
 
-  return (
+  useEffect(() => {
+    subscribetomessage()
+
+    return () => unsubscribeFromMessages()
+  }, [subscribetomessage, unsubscribeFromMessages])
+  
+    return (
    <>
    <ChatHeader />
 
@@ -54,7 +65,7 @@ const ChatContainer = () => {
               </div>
             ))}
             {/* 👇 scroll target */}
-            {/* <div ref={messageEndRef} /> */}
+            <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
           <MeddshrdLoadingskelton />

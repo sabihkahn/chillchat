@@ -8,7 +8,7 @@ const router = express.Router()
 router.post('/signup',signup)
 router.post('/login',logincontroller)
 router.post('/logout',logout)
-router.get('/get',authorization,async(req,res) =>{
+router.get('/check',authorization,async(req,res) =>{
     try {
         res.status(200).json({user:req.user})
     } catch (error) {

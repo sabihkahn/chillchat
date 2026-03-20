@@ -1,1 +1,18 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+@theme {
+    --inline-animation-border: border 4s linear infinite;
+
+    @keyframes border {
+        to {
+            --border-angle: 360deg;
+        }
+    }
+}
+
+@property --border-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}

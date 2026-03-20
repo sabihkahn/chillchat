@@ -14,17 +14,34 @@ isUsersLoading:false,
 isMessagesLoading:false,
 isSoundEnbled: localStorage.getItem("isSoundEnbled") === "true",
 iscalling:false,
+callData:null,
 callaccepted:false,
 
 // set is calling
 
-setiscalling:()=>{
-set({iscalling:!get().iscalling})
-    console.log(get().iscalling);
 
+
+// Call state (controls the `Calling` UI)
+setCalling: (value) => {
+    const next = !!value;
+    set({
+        iscalling: next,
+        callData: next ? get().callData : null,
+    });
 },
 
+// UI uses this name; supports both toggling (no arg) and explicit boolean.
+setiscalling: (value) => {
+    const next = typeof value === "boolean" ? value : !get().iscalling;
+    set({
+        iscalling: next,
+        callData: next ? get().callData : null,
+    });
+},
 
+setCallData: (data) => set({ callData: data }),
+
+clearCall: () => set({ iscalling: false, callData: null }),
 
 
 //`toogle sound on/off  just change based on the boolen we get eg: !Boolean
@@ -44,8 +61,12 @@ setActiveTab:(tab)=>{
 // id,name,email in the selecteduser variable 
 
 setSelectedUsers:(selectedUser1)=>{
-set({selectedUser:selectedUser1})
-console.log(selectedUser1);
+    const clearing = !selectedUser1;
+    set({
+        selectedUser: selectedUser1,
+        ...(clearing ? { iscalling: false, callData: null } : {}),
+    });
+    console.log(selectedUser1);
 
 },
 

@@ -9,37 +9,24 @@ import { Toaster } from 'react-hot-toast'
 import { useChatStore } from './store/useChatStore'
 
 const App = () => {
-  const { checkAuth, isCheckingAuth, authUser, socket } = useAuthStore()
+  const { authUser, socket } = useAuthStore()
 
-  const { setSelectedUsers, setiscalling } = useChatStore();
+  const { setSelectedUsers, setCallData, setCalling } = useChatStore();
 
-  useEffect(() => {
+    useEffect(() => {
     if (!socket) return;
 
     socket.on("incoming-call", ({ from, offer }) => {
-      console.log("📞 Incoming call from:", from);
+      console.log("📞 Incoming call");
 
-      // set user
       setSelectedUsers({ _id: from });
-
-      // open calling UI
-      setiscalling();
-
-      // 🔥 IMPORTANT: store offer globally (you need this)
-      window.incomingOffer = offer;
+      setCallData({ offer, from });
+      setCalling(true);
     });
 
-    return () => {
-      socket.off("incoming-call");
-    };
-  }, [socket]);
-   useEffect(() => {
-     checkAuth();
-   }, [checkAuth]);
-
-   if(isCheckingAuth) return <PageLoder />
-  console.log(authUser);
-   
+    return () => socket.off("incoming-call");
+  }, [socket, setSelectedUsers, setCallData, setCalling]);
+  
   return (
     <>
       

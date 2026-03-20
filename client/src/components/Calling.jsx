@@ -1,33 +1,37 @@
-import React, { useEffect, useRef } from "react";
-import { Mic, Video, PhoneOff } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 
 const Calling = () => {
-  const { selectedUser, setiscalling } = useChatStore();
+  const { selectedUser, callData, clearCall } = useChatStore();
   const { socket } = useAuthStore();
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerRef = useRef(null);
+  const iceQueue = useRef([]);
+  const startedRef = useRef(false);
 
   const userId = selectedUser?._id;
+  const isReceiver = !!callData;
 
   useEffect(() => {
+    if (!socket || !userId) return;
+
     const init = async () => {
+      if (peerRef.current) {
+        peerRef.current.close();
+        peerRef.current = null;
+      }
+      iceQueue.current = [];
+
       const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-        ],
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
       peerRef.current = pc;
 
+      // LOCAL STREAM
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -39,47 +43,36 @@ const Calling = () => {
         pc.addTrack(track, stream);
       });
 
+      // REMOTE STREAM
       pc.ontrack = (e) => {
+        console.log("🔥 REMOTE TRACK");
         remoteVideoRef.current.srcObject = e.streams[0];
       };
 
+      // ICE SEND
       pc.onicecandidate = (e) => {
         if (e.candidate) {
           socket.emit("ice-candidate", {
             candidate: e.candidate,
-            userId: userId,
+            to: userId,
           });
         }
       };
 
-      // ✅ HANDLE RECEIVED OFFER
-      if (window.callData?.offer) {
-        const { offer, from } = window.callData;
-
-        await pc.setRemoteDescription(offer);
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        socket.emit("answer", {
-          answer,
-          userId: from,
-        });
-
-        window.callData = null;
-      }
-
-      // ✅ ANSWER RECEIVED (caller side)
+      // RECEIVE ANSWER
       socket.on("call-answered", async ({ answer }) => {
         await pc.setRemoteDescription(answer);
+
+        iceQueue.current.forEach((c) => pc.addIceCandidate(c));
+        iceQueue.current = [];
       });
 
-      // ✅ ICE
+      // RECEIVE ICE
       socket.on("ice-candidate", async ({ candidate }) => {
-        try {
+        if (pc.remoteDescription) {
           await pc.addIceCandidate(candidate);
-        } catch (err) {
-          console.log("ICE error", err);
+        } else {
+          iceQueue.current.push(candidate);
         }
       });
     };
@@ -90,78 +83,110 @@ const Calling = () => {
       socket.off("call-answered");
       socket.off("ice-candidate");
 
-      if (peerRef.current) peerRef.current.close();
+      if (peerRef.current) {
+        peerRef.current.close();
+        peerRef.current = null;
+      }
     };
-  }, []);
+  }, [socket, userId]);
 
-  // ✅ CALL USER
-  const startCall = async () => {
+  // ✅ CALL (caller only)
+  const startCall = useCallback(async () => {
     const pc = peerRef.current;
+    if (!pc) return;
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
     socket.emit("offer", {
       offer,
-      userId: userId, // ✅ IMPORTANT FIX
+      to: userId,
+    });
+  }, [socket, userId]);
+
+  // Caller: auto-send the offer as soon as the Calling view mounts.
+  // This makes the header "Call" button behave as "start the call".
+  useEffect(() => {
+    if (callData) return; // receiver will click "Accept"
+    if (!socket || !userId) return;
+    if (startedRef.current) return;
+    startedRef.current = true;
+
+    // Fire and forget; we don't await inside effect.
+    startCall();
+  }, [callData, socket, userId, startCall]);
+
+  // ✅ ACCEPT (receiver only)
+  const acceptCall = async () => {
+    const pc = peerRef.current;
+    const { offer, from } = callData;
+
+    await pc.setRemoteDescription(offer);
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    socket.emit("answer", {
+      answer,
+      to: from,
     });
 
-    setiscalling();
+    iceQueue.current.forEach((c) => pc.addIceCandidate(c));
+    iceQueue.current = [];
   };
 
   return (
-    <div className="h-screen w-full bg-black flex items-center justify-center relative">
+<div className="h-screen bg-gradient-to-br from-gray-900 to-black flex justify-center items-center relative overflow-hidden">
 
-      {/* REMOTE */}
-      <video
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-        className="absolute w-full h-full object-cover"
-      />
+  {/* REMOTE VIDEO */}
+  <video
+    ref={remoteVideoRef}
+    autoPlay
+    playsInline
+    className="w-full h-full object-cover"
+  />
 
-      {/* LOCAL */}
-      <div className="absolute top-5 right-5 w-32 h-44 rounded-xl overflow-hidden">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-      </div>
+  {/* DARK OVERLAY FOR READABILITY */}
+  <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
-      {/* INFO */}
-      <div className="absolute top-6 left-6 text-white">
-        <h2>Calling {selectedUser?.fullName}</h2>
-      </div>
+  {/* LOCAL VIDEO (FLOATING CARD) */}
+  <div className="absolute top-4 right-4 rounded-2xl overflow-hidden shadow-2xl border border-white/10 backdrop-blur-sm">
+    <video
+      ref={localVideoRef}
+      autoPlay
+      muted
+      className="w-44 h-32 object-cover"
+    />
+  </div>
 
-      {/* CONTROLS */}
-      <div className="absolute bottom-10 flex gap-6 bg-white/10 p-4 rounded-full">
+  {/* CONTROLS BAR */}
+  <div className="absolute bottom-8 flex items-center gap-6 px-6 py-3 rounded-full bg-white/10 backdrop-blur-lg shadow-lg border border-white/10">
 
-        <button className="p-3 bg-gray-800 rounded-full">
-          <Mic className="text-white" />
-        </button>
+    {isReceiver ? (
+      <button
+        onClick={acceptCall}
+        className="bg-green-500 hover:bg-green-600 transition px-5 py-2 rounded-full text-white font-medium shadow-md"
+      >
+        Accept
+      </button>
+    ) : (
+      <button
+        onClick={startCall}
+        className="bg-blue-500 hover:bg-blue-600 transition px-5 py-2 rounded-full text-white font-medium shadow-md"
+      >
+        Call
+      </button>
+    )}
 
-        <button className="p-3 bg-gray-800 rounded-full">
-          <Video className="text-white" />
-        </button>
+    <button
+      onClick={clearCall}
+      className="bg-red-500 hover:bg-red-600 transition px-5 py-2 rounded-full text-white font-medium shadow-md"
+    >
+      End
+    </button>
+  </div>
 
-        <button
-          onClick={() => setiscalling()}
-          className="p-3 bg-red-600 rounded-full"
-        >
-          <PhoneOff className="text-white" />
-        </button>
-
-        <button
-          onClick={startCall}
-          className="p-3 bg-cyan-600 rounded-full text-white"
-        >
-          Call
-        </button>
-      </div>
-    </div>
+</div>
   );
 };
 

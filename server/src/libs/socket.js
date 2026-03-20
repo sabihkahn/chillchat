@@ -39,40 +39,32 @@ io.on("connection",(socket)=>{
     })
 
 
+socket.on("offer", ({ offer, to }) => {
+  const target = getreciverId(to);
 
-    socket.on("offer", ({ offer, userId }) => {
-        const targetSocketId = getreciverId(userId);
-
-        if (targetSocketId) {
-            io.to(targetSocketId).emit("incoming-call", {
-                from: socket.userId,
-                offer,
-            });
-        }
+  if (target) {
+    io.to(target).emit("incoming-call", {
+      from: socket.userId,
+      offer,
     });
+  }
+});
 
-    // Receiver sends answer
-    socket.on("answer", ({ answer, userId }) => {
-        const targetSocketId = getreciverId(userId);
+socket.on("answer", ({ answer, to }) => {
+  const target = getreciverId(to);
 
-        if (targetSocketId) {
-            io.to(targetSocketId).emit("call-answered", {
-                answer,
-            });
-        }
-    });
+  if (target) {
+    io.to(target).emit("call-answered", { answer });
+  }
+});
 
-    // ICE candidates
-    socket.on("ice-candidate", ({ candidate, userId }) => {
-        const targetSocketId = getreciverId(userId);
+socket.on("ice-candidate", ({ candidate, to }) => {
+  const target = getreciverId(to);
 
-        if (targetSocketId) {
-            io.to(targetSocketId).emit("ice-candidate", {
-                candidate,
-            });
-        }
-    });
-
+  if (target) {
+    io.to(target).emit("ice-candidate", { candidate });
+  }
+});
 
  
 

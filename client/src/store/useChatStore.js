@@ -13,6 +13,18 @@ selectedUser:null,
 isUsersLoading:false,
 isMessagesLoading:false,
 isSoundEnbled: localStorage.getItem("isSoundEnbled") === "true",
+iscalling:false,
+callaccepted:false,
+
+// set is calling
+
+setiscalling:()=>{
+set({iscalling:!get().iscalling})
+    console.log(get().iscalling);
+
+},
+
+
 
 
 //`toogle sound on/off  just change based on the boolen we get eg: !Boolean
@@ -48,7 +60,6 @@ getAllContacts: async()=>{
     } catch (error) {
         toast.error(error.response.data.message)
         console.log("error occur in getAllContacts",error);
-        
     }
     finally{
         set({isUsersLoading:false})

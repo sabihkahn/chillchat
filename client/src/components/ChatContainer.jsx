@@ -9,10 +9,10 @@ import NoChatHistoryPlaceholder from '../components/NoChatHistoryPlaceholder'
 // import MessageInput from "./MessageInput";
 // import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 import MeddshrdLoadingskelton from '../components/MeddshrdLoadingskelton'
+import Calling from  '../components/Calling'
+ const ChatContainer = () => {
 
-const ChatContainer = () => {
-
-  const { getMessagesByuserid, messages, selectedUser, isMessagesLoading, subscribetomessage, unsubscribeFromMessages } = useChatStore()
+  const { getMessagesByuserid, messages, selectedUser, isMessagesLoading, subscribetomessage, unsubscribeFromMessages, iscalling } = useChatStore()
   const { authUser } = useAuthStore()
   const messageEndRef = useRef(null)
   useEffect(()=>{
@@ -36,7 +36,7 @@ const ChatContainer = () => {
    <>
    <ChatHeader />
 
-
+{  iscalling ? <Calling /> :  <>
       <div className="flex-1 px-6 overflow-y-auto py-8">
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
@@ -74,6 +74,7 @@ const ChatContainer = () => {
         )}
         </div>
       <MessageInput />
+      </> }
    
    </>
   )

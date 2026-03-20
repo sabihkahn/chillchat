@@ -10,7 +10,7 @@ export const useAuthStore = create((set,get)=>({
     
     // socket connection 
 
-    socket:null,
+    socket:null, 
     onlineUsers: [],
 
 
@@ -37,7 +37,9 @@ export const useAuthStore = create((set,get)=>({
         if (socket?.connected) socket.disconnect();
     },
     // Signup function and all related functions will go here
+        
 
+    
 
      isSigningUp: false,
     

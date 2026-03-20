@@ -8,10 +8,17 @@ import ContactList from '../components/ContactList'
 import ChatContainer from '../components/ChatContainer'
 import NoConversationPlaceholder from '../components/NoConversationPlaceholder'
 
+// import { useAuthStore } from "../store/useAuthStore";
+
+
 const ChatPage = () => {
 
   const { activeTab, selectedUser } = useChatStore();
- 
+  // const { onlineUsers } = useAuthStore();
+  
+
+
+
   return (
     <div className="relative w-full max-w-6xl h-[800px]">
       <BorderAnimatedContainer>

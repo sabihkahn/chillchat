@@ -38,6 +38,36 @@ io.on("connection",(socket)=>{
         io.emit("getOnlineUsers", Object.keys(userSocketmap))
     })
 
+
+
+    // socket.on("offer", ({ offer, to }) => {
+    //     const targetSocketId = getReceiverSocketId(to);
+    //     if (targetSocketId) {
+    //         io.to(targetSocketId).emit("incoming-call", { from: userId, offer });
+    //     }
+    // });
+
+    // // Receiver sends "answer" → caller
+    // socket.on("answer", ({ answer, to }) => {
+    //     const targetSocketId = getReceiverSocketId(to);
+    //     if (targetSocketId) {
+    //         io.to(targetSocketId).emit("call-answered", { answer });
+    //     }
+    // });
+
+    // // ICE candidate exchange
+    // socket.on("ice-candidate", ({ candidate, to }) => {
+    //     const targetSocketId = getReceiverSocketId(to);
+    //     if (targetSocketId) {
+    //         io.to(targetSocketId).emit("ice-candidate", { candidate });
+    //     }
+    // });
+
+
+ 
+
+
+
     }
 )
 

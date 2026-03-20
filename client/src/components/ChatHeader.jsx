@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useChatStore } from '../store/useChatStore';
-import { XIcon } from "lucide-react";
+import { XIcon,PhoneCallIcon } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
 const ChatHeader = () => {
-    const { selectedUser, setSelectedUsers } = useChatStore();
+
+    const { selectedUser, setSelectedUsers, setiscalling, iscalling } = useChatStore();
     const { onlineUsers } = useAuthStore();
 
     useEffect(() => {
@@ -21,6 +22,7 @@ const ChatHeader = () => {
     const isOnline = onlineUsers.includes((selectedUser._id).toString());
     console.log("onlineUsers:", onlineUsers);
     console.log("selectedUser:", selectedUser._id.toString());
+
     return (
         <div className="flex justify-between items-center bg-slate-900/50 backdrop-blur-md border-b border-slate-700/50 h-[84px] px-6">
             <div className="flex items-center space-x-4">
@@ -43,6 +45,29 @@ const ChatHeader = () => {
                     <p className={`text-xs ${isOnline ? "text-emerald-500" : "text-slate-500"}`}>
                         {isOnline ? "Online" : "Offline"}
                     </p>
+                </div>
+                <div className="flex flex-row gap-1.5">
+                    {isOnline ?
+                    <> 
+                            <div onClick={() => {
+                                setiscalling()
+                            }}>
+
+                                {iscalling ? 
+                                  <div className="flex flex-row">  
+                                  <XIcon className="cursor-pointer w-5 h-5 text-red-400 group-hover:text-slate-100" />
+                                   <p className="text-white text-sm">disconnect</p>
+                                    </div>
+                                    : <div className="flex flex-row">  <PhoneCallIcon  className="cursor-pointer w-5 h-5 text-green-500 group-hover:text-slate-100  " />
+                                        <p className="text-white text-sm">Call</p></div>}
+                    </div>
+                    </>
+                    
+                        : 
+                        <>
+                            <PhoneCallIcon className="cursor-pointer w-5 h-5 text-red-500 group-hover:text-slate-100  " />
+                            <p  className="text-white text-sm">Cant call user is offline</p>
+                        </>}
                 </div>
             </div>
 

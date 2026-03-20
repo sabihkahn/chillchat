@@ -6,10 +6,33 @@ import SignupPage from './pages/SignupPage'
 import { useAuthStore } from './store/useAuthStore'
 import PageLoder from './components/PageLoder'
 import { Toaster } from 'react-hot-toast'
+import { useChatStore } from './store/useChatStore'
 
 const App = () => {
-  const { checkAuth, isCheckingAuth, authUser } = useAuthStore()
- 
+  const { checkAuth, isCheckingAuth, authUser, socket } = useAuthStore()
+
+  const { setSelectedUsers, setiscalling } = useChatStore();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("incoming-call", ({ from, offer }) => {
+      console.log("📞 Incoming call from:", from);
+
+      // set user
+      setSelectedUsers({ _id: from });
+
+      // open calling UI
+      setiscalling();
+
+      // 🔥 IMPORTANT: store offer globally (you need this)
+      window.incomingOffer = offer;
+    });
+
+    return () => {
+      socket.off("incoming-call");
+    };
+  }, [socket]);
    useEffect(() => {
      checkAuth();
    }, [checkAuth]);

@@ -1,47 +1,118 @@
 import React, { useEffect, useRef } from "react";
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from "lucide-react";
-import {useChatStore} from '../store/useChatStore'
+import { Mic, Video, PhoneOff } from "lucide-react";
+import { useChatStore } from "../store/useChatStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 const Calling = () => {
-  const { selectedUser, setiscalling } = useChatStore()
-  
+  const { selectedUser, setiscalling } = useChatStore();
+  const { socket } = useAuthStore();
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const userId = selectedUser._id
+  const peerRef = useRef(null);
 
-  
-
-
-  console.log(userId)
+  const userId = selectedUser?._id;
 
   useEffect(() => {
-    const getUserMediaStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
+    const init = async () => {
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
+        ],
+      });
+
+      peerRef.current = pc;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      localVideoRef.current.srcObject = stream;
+
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
+
+      pc.ontrack = (e) => {
+        remoteVideoRef.current.srcObject = e.streams[0];
+      };
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("ice-candidate", {
+            candidate: e.candidate,
+            userId: userId,
+          });
+        }
+      };
+
+      // ✅ HANDLE RECEIVED OFFER
+      if (window.callData?.offer) {
+        const { offer, from } = window.callData;
+
+        await pc.setRemoteDescription(offer);
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        socket.emit("answer", {
+          answer,
+          userId: from,
         });
 
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-
-        // TEMP: show same stream as remote (for demo)
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.log("Error accessing media:", error);
+        window.callData = null;
       }
+
+      // ✅ ANSWER RECEIVED (caller side)
+      socket.on("call-answered", async ({ answer }) => {
+        await pc.setRemoteDescription(answer);
+      });
+
+      // ✅ ICE
+      socket.on("ice-candidate", async ({ candidate }) => {
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (err) {
+          console.log("ICE error", err);
+        }
+      });
     };
 
-    getUserMediaStream();
+    init();
+
+    return () => {
+      socket.off("call-answered");
+      socket.off("ice-candidate");
+
+      if (peerRef.current) peerRef.current.close();
+    };
   }, []);
 
-  return (
-    <div className="h-screen w-full bg-black flex items-center justify-center relative overflow-hidden">
+  // ✅ CALL USER
+  const startCall = async () => {
+    const pc = peerRef.current;
 
-      {/* REMOTE VIDEO (FULL SCREEN) */}
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    socket.emit("offer", {
+      offer,
+      userId: userId, // ✅ IMPORTANT FIX
+    });
+
+    setiscalling();
+  };
+
+  return (
+    <div className="h-screen w-full bg-black flex items-center justify-center relative">
+
+      {/* REMOTE */}
       <video
         ref={remoteVideoRef}
         autoPlay
@@ -49,11 +120,8 @@ const Calling = () => {
         className="absolute w-full h-full object-cover"
       />
 
-      {/* DARK OVERLAY */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-      {/* LOCAL VIDEO (FLOATING) */}
-      <div className="absolute top-5 right-5 w-32 h-44 md:w-40 md:h-52 rounded-2xl overflow-hidden border border-white/20 shadow-xl">
+      {/* LOCAL */}
+      <div className="absolute top-5 right-5 w-32 h-44 rounded-xl overflow-hidden">
         <video
           ref={localVideoRef}
           autoPlay
@@ -63,33 +131,34 @@ const Calling = () => {
         />
       </div>
 
-      {/* USER INFO */}
+      {/* INFO */}
       <div className="absolute top-6 left-6 text-white">
-        <h2 className="text-xl font-semibold">Calling {selectedUser?selectedUser.fullName:"calling"}...</h2>
-        <p className="text-sm text-gray-300">Connecting</p>
+        <h2>Calling {selectedUser?.fullName}</h2>
       </div>
 
       {/* CONTROLS */}
-      <div className="absolute bottom-10 flex gap-6 bg-white/10 backdrop-blur-lg px-6 py-3 rounded-full shadow-lg border border-white/10">
+      <div className="absolute bottom-10 flex gap-6 bg-white/10 p-4 rounded-full">
 
-        {/* MUTE */}
-        <button className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition">
+        <button className="p-3 bg-gray-800 rounded-full">
           <Mic className="text-white" />
         </button>
 
-        {/* CAMERA */}
-        <button className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition">
+        <button className="p-3 bg-gray-800 rounded-full">
           <Video className="text-white" />
         </button>
 
-        {/* END CALL */}
-        <button 
-         onClick={()=>{
-            setiscalling()
-         }}
-        className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition">
+        <button
+          onClick={() => setiscalling()}
+          className="p-3 bg-red-600 rounded-full"
+        >
           <PhoneOff className="text-white" />
+        </button>
 
+        <button
+          onClick={startCall}
+          className="p-3 bg-cyan-600 rounded-full text-white"
+        >
+          Call
         </button>
       </div>
     </div>
